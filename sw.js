@@ -1,44 +1,37 @@
 const WEBHOOK = "https://webhook.site/1361d3b1-f231-4039-b4c7-5f2e7677f0b3";
 
-// התקנה מיידית והשתלטות על הזיכרון
-self.addEventListener('install', e => {
-    self.skipWaiting();
-});
-
+// השתלטות מיידית על זיכרון המכשיר
+self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => {
     e.waitUntil(clients.claim());
-    // פעימת התעוררות ראשונה עם הפעלת הסוכן
-    pulse("CORE_AGENT_ACTIVATED");
+    pulse("CORE_INITIALIZED");
 });
 
-// פונקציית השידור המרכזית - פועלת בנפרד מהדף הראשי
+// פונקציית שידור עצמאית לחלוטין
 async function pulse(evtType) {
     try {
         await fetch(WEBHOOK, {
             method: 'POST',
             mode: 'no-cors',
             cache: 'no-store',
-            priority: 'high',
             body: JSON.stringify({
                 event: evtType,
                 status: "SOVEREIGN_ALIVE",
-                note: "שידור ישיר מליבת הסוכן - ללא תלות בדף",
+                layer: "ServiceWorker_Deep",
                 ts: new Date().toISOString()
             })
         });
-    } catch(e) {
-        // ניסיון שידור חוזר במקרה של כשל רשת
-    }
+    } catch(e) {}
 }
 
-// לולאת הפעימות האוטונומית - בכל 30 שניות
+// לולאת שידור אינסופית בכל 30 שניות
 setInterval(() => {
     pulse("CORE_AGENT_PULSE");
 }, 30000);
 
-// האזנה לאירועי סנכרון רקע של מערכת ההפעלה (גיבוי נוסף)
-self.addEventListener('periodicsync', (event) => {
-    if (event.tag === 'owl-beacon') {
-        event.waitUntil(pulse("PERIODIC_SYNC_STRIKE"));
+// מענה לפקודות מהדף הראשי
+self.addEventListener('message', (event) => {
+    if (event.data === 'ping') {
+        pulse("MANUAL_WAKEUP_FROM_PAGE");
     }
 });
